@@ -1,13 +1,13 @@
 package com.rest1.domain.member.member.entity;
 
 import com.rest1.global.jpa.entity.BaseEntity;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.persistence.Entity;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
 @Getter
-@Setter
-@NotEmpty
+@Entity
 public class Member extends BaseEntity {
 
     String username;
