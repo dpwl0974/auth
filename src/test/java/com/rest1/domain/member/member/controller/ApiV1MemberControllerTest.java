@@ -63,4 +63,34 @@ public class ApiV1MemberControllerTest {
 
     }
 
+    @Test
+    @DisplayName("회원 가입, 이미 존재하는 username으로 가입 - user1")
+    void t2() throws Exception {
+        String username = "user1";
+        String password = "1234";
+        String nickname = "새유저";
+
+        ResultActions resultActions = mvc
+                .perform(
+                        post("/api/v1/members")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "username": "%s",
+                                            "password": "%s",
+                                            "nickname": "%s"
+                                        }
+                                        """.formatted(username, password, nickname))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("join"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.resultCode").value("409-1"))
+                .andExpect(jsonPath("$.msg").value("이미 사용중인 아이디입니다.".formatted(nickname)));
+
+    }
+
 }
