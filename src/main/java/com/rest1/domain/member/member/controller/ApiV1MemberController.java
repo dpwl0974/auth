@@ -10,10 +10,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.Singular;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -38,7 +35,7 @@ public class ApiV1MemberController {
       MemberDto memberDto
     ) {}
 
-    @PostMapping()
+    @PostMapping("/join")
     public RsData<MemberDto> join(
             @RequestBody @Valid JoinReqBody reqBody
             ){
@@ -50,6 +47,39 @@ public class ApiV1MemberController {
                 "회원가입이 완료되었습니다. %s님 환영합니다.".formatted(reqBody.nickname),
                 new JoinResBody(new MemberDto(member))
 
+        );
+    }
+
+    record LoginReqBody(
+            @NotBlank
+            @Size(min = 2, max = 30)
+            String username,
+            @NotBlank
+            @Size(min = 2, max = 30)
+            String password
+    ){}
+
+    record LoginResBody(
+            MemberDto memberDto,
+            String apiKey // dto에 넣으면 데이터 주고받을 때도 쓰임 -> 비효율적 / 로그인시에만
+    ){}
+
+    @PostMapping("/login")
+    public RsData<MemberDto> login(
+            @RequestBody @Valid LoginReqBody reqBody
+    ){
+        Member member = memberService.findByUsername(reqBody.username).orElseThrow(
+                () -> new ServiceException("401-1","존재하지 앟는 아이디입니다." )
+        );
+
+        if(!member.getPassword().equals(reqBody.password)){
+            throw new ServiceException("401-2", "비밀번호가 일치하지 않습니다.");
+        }
+
+        return new RsData(
+                "200-1",
+                "%s님 환영합니다.".formatted(reqBody.username),
+                new LoginResBody(new MemberDto(member), member.getApiKey())
         );
     }
 }
