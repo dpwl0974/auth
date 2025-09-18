@@ -8,7 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.annotation.RequestScope;
+
 @Component
 @RequiredArgsConstructor
 public class Rq {
@@ -36,8 +36,13 @@ public class Rq {
     }
 
     public void addCookie(String name, String value) {
-        response.addCookie(
-                new Cookie(name, value)
-        );
+
+        Cookie cookie = new Cookie(name, value);
+        cookie.setDomain("localhost");
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+
+        response.addCookie(cookie);
+
     }
 }
