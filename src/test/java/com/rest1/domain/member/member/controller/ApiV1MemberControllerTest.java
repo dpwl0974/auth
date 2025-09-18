@@ -17,8 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -38,6 +37,7 @@ public class ApiV1MemberControllerTest {
     @Test
     @DisplayName("회원 가입")
     void t1() throws Exception {
+
         String username = "newUser";
         String password = "1234";
         String nickname = "새유저";
@@ -52,7 +52,8 @@ public class ApiV1MemberControllerTest {
                                             "password": "%s",
                                             "nickname": "%s"
                                         }
-                                        """.formatted(username, password, nickname))
+                                        """.formatted(username, password, nickname)
+                                )
                 )
                 .andDo(print());
 
@@ -66,12 +67,13 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.data.memberDto.createDate").exists())
                 .andExpect(jsonPath("$.data.memberDto.modifyDate").exists())
                 .andExpect(jsonPath("$.data.memberDto.name").value(nickname));
-
     }
 
+
     @Test
-    @DisplayName("회원 가입, 이미 존재하는 username으로 가입 - user1")
+    @DisplayName("회원 가입, 이미 존재하는 username으로 가입 - user1로 가입")
     void t2() throws Exception {
+
         String username = "user1";
         String password = "1234";
         String nickname = "새유저";
@@ -86,7 +88,8 @@ public class ApiV1MemberControllerTest {
                                             "password": "%s",
                                             "nickname": "%s"
                                         }
-                                        """.formatted(username, password, nickname))
+                                        """.formatted(username, password, nickname)
+                                )
                 )
                 .andDo(print());
 
@@ -95,8 +98,7 @@ public class ApiV1MemberControllerTest {
                 .andExpect(handler().methodName("join"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.resultCode").value("409-1"))
-                .andExpect(jsonPath("$.msg").value("이미 사용중인 아이디입니다.".formatted(nickname)));
-
+                .andExpect(jsonPath("$.msg").value("이미 사용중인 아이디입니다."));
     }
 
     @Test
@@ -137,13 +139,13 @@ public class ApiV1MemberControllerTest {
         resultActions.andExpect(
                 result -> {
                     Cookie apiKeyCookie = result.getResponse().getCookie("apiKey");
-
                     assertThat(apiKeyCookie).isNotNull();
+
                     assertThat(apiKeyCookie.getPath()).isEqualTo("/");
                     assertThat(apiKeyCookie.getDomain()).isEqualTo("localhost");
                     assertThat(apiKeyCookie.isHttpOnly()).isEqualTo(true);
 
-                    if(apiKeyCookie != null) {
+                    if (apiKeyCookie != null) {
                         assertThat(apiKeyCookie.getValue()).isNotBlank();
                     }
                 }
@@ -152,8 +154,34 @@ public class ApiV1MemberControllerTest {
     }
 
     @Test
-    @DisplayName("내 정보")
+    @DisplayName("로그아웃")
     void t4() throws Exception {
+        ResultActions resultActions = mvc
+                .perform(
+                        delete("/api/v1/members/logout")
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("logout"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("로그아웃 되었습니다."))
+                .andExpect(result -> {
+                    Cookie apiKeyCookie = result.getResponse().getCookie("apiKey");
+
+                    assertThat(apiKeyCookie.getValue()).isEmpty();
+                    assertThat(apiKeyCookie.getMaxAge()).isEqualTo(0);
+                    assertThat(apiKeyCookie.getPath()).isEqualTo("/");
+                    assertThat(apiKeyCookie.isHttpOnly()).isTrue();
+
+                });
+    }
+
+    @Test
+    @DisplayName("내 정보")
+    void t5() throws Exception {
         Member actor = memberRepository.findByUsername("user1").get();
         String actorApiKey = actor.getApiKey();
 
@@ -178,4 +206,5 @@ public class ApiV1MemberControllerTest {
                 .andExpect(jsonPath("$.data.memberDto.modifyDate").value(member.getModifyDate().toString()))
                 .andExpect(jsonPath("$.data.memberDto.name").value(member.getName()));
     }
+
 }
