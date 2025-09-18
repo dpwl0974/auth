@@ -20,16 +20,32 @@ public class Rq {
     public Member getActor() {
 
         String authorization = request.getHeader("Authorization");
+        String apiKey = null;
 
-        if (authorization == null || authorization.isEmpty()) {
-            throw new ServiceException("401-1", "헤더에 인증 정보가 없습니다.");
-        }
+        if(authorization != null && !authorization.isEmpty()) {
 
-        if (!authorization.startsWith("Bearer ")) {
-            throw new ServiceException("401-2", "헤더의 인증 정보 형식이 올바르지 않습니다.");
-        }
+            if (!authorization.startsWith("Bearer ")) {
+                throw new ServiceException("401-2", "헤더의 인증 정보 형식이 올바르지 않습니다.");
+            }
 
-        Member actor = memberService.findByApiKey(authorization.replace("Bearer ", ""))
+            apiKey = authorization.replace("Bearer ", "");
+
+        } else {
+                Cookie[] cookies = request.getCookies();
+
+                if(cookies == null) {
+                    throw new ServiceException("401-1", "인증 정보가 없습니다.");
+                }
+
+                for(Cookie cookie : cookies) {
+                    if(cookie.getName().equals("apiKey")) {
+                        apiKey = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+
+        Member actor = memberService.findByApiKey(apiKey)
                 .orElseThrow(() -> new ServiceException("401-3", "API 키가 올바르지 않습니다."));
 
         return actor;
