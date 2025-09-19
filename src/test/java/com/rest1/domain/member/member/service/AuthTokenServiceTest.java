@@ -59,7 +59,7 @@ public class AuthTokenServiceTest {
     @DisplayName("Ut.jwt.toString 를 통해서 JWT 생성, {name=\"Paul\", age=23}")
     void t3() {
         String jwt = Ut.jwt.toString(
-                secretPattern,
+                secretPattern, // 위조 방지 기술 (secret key)
                 expireSeconds,
                 Map.of("name", "Paul", "age", 23) // 토큰화 하고 싶은 내용
         );
