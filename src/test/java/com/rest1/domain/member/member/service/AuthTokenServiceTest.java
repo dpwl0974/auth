@@ -43,7 +43,7 @@ public class AuthTokenServiceTest {
     }
 
     @Test
-    @DisplayName("jjwt 최신 방식으로 JWT 생성, {name=\"Paul\", age=23}")
+    @DisplayName("jjwt 최신 방식으로 JWT 생성, {name=\"Paul\", age=23} / 로직 그대로 드러냄")
     void t2() {
         SecretKey secretKey = Keys.hmacShaKeyFor(secretPattern.getBytes(StandardCharsets.UTF_8));
 
@@ -79,18 +79,28 @@ public class AuthTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Ut.jwt.toString 를 통해서 JWT 생성, {name=\"Paul\", age=23}")
+    @DisplayName("Ut.jwt.toString 를 통해서 JWT 생성, {name=\"Paul\", age=23} /  추상화")
     void t3() {
+
+        Map<String, Object> payload = Map.of("name", "Paul", "age", 23); // 토큰화 하고 싶은 내용
+
+        // 직렬화 -> toString
         String jwt = Ut.jwt.toString(
                 secretPattern, // 위조 방지 기술 (secret key)
                 expireSeconds,
-                Map.of("name", "Paul", "age", 23) // 토큰화 하고 싶은 내용
+                payload
         );
 
         assertThat(jwt).isNotBlank();
 
         boolean validResult = Ut.jwt.isValid(jwt, secretPattern);
         assertThat(validResult).isTrue();
+
+        // 역직렬화 -> payload
+        Map<String, Object> parsedPayload = Ut.jwt.payload(jwt, secretPattern);
+
+        assertThat(parsedPayload)
+                .containsAllEntriesOf(payload);
 
         System.out.println("jwt = " + jwt);
     }
