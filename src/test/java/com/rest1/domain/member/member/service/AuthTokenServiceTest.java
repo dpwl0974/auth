@@ -51,12 +51,26 @@ public class AuthTokenServiceTest {
         Date issuedAt = new Date();
         Date expiration = new Date(issuedAt.getTime() + expireSeconds);
 
+        Map<String, Object> payload = Map.of("name", "Paul", "age", 23);
+
         String jwt = Jwts.builder()
-                .claims(Map.of("name", "Paul", "age", 23)) // 내용
+                .claims(payload) // 내용
                 .issuedAt(issuedAt) // 생성날짜
                 .expiration(expiration) // 만료날짜
                 .signWith(secretKey) // 키 서명
                 .compact();
+
+        // 토큰화 한 map을 다시 파싱하여 map으로 꺼냄
+        Map<String, Object> parsedPayload = (Map<String, Object>) Jwts
+                .parser()
+                .verifyWith(secretKey)
+                .build()
+                .parse(jwt)
+                .getPayload();
+
+        // 기존 map과 토큰화를 거친 파싱한 map이 같은지 확인 -> 같아야 함
+        assertThat(parsedPayload)
+                .containsAllEntriesOf(payload);
 
         assertThat(jwt).isNotBlank();
 
