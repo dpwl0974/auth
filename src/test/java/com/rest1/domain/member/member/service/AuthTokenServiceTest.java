@@ -61,11 +61,12 @@ public class AuthTokenServiceTest {
                 .compact();
 
         // 토큰화 한 map을 다시 파싱하여 map으로 꺼냄
+        // 조건 충족 x -> 에러터짐
         Map<String, Object> parsedPayload = (Map<String, Object>) Jwts
                 .parser()
-                .verifyWith(secretKey)
+                .verifyWith(secretKey) // 키가 잘못된지 확인
                 .build()
-                .parse(jwt)
+                .parse(jwt) // 만료날짜가 지났는지 확인
                 .getPayload();
 
         // 기존 map과 토큰화를 거친 파싱한 map이 같은지 확인 -> 같아야 함
