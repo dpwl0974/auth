@@ -2,6 +2,7 @@ package com.rest1.domain.member.member.controller;
 
 import com.rest1.domain.member.member.dto.MemberDto;
 import com.rest1.domain.member.member.entity.Member;
+import com.rest1.domain.member.member.service.AuthTokenService;
 import com.rest1.domain.member.member.service.MemberService;
 import com.rest1.global.exception.ServiceException;
 import com.rest1.global.rq.Rq;
@@ -10,8 +11,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
-import lombok.Singular;
 import org.springframework.web.bind.annotation.*;
+
 
 
 @RestController
@@ -21,6 +22,7 @@ public class ApiV1MemberController {
 
     private final MemberService memberService;
     private final Rq rq;
+    private final AuthTokenService authTokenService;
 
     record JoinReqBody(
             @NotBlank
@@ -71,7 +73,8 @@ public class ApiV1MemberController {
 
     record LoginResBody(
             MemberDto memberDto,
-            String apiKey
+            String apiKey,
+            String accessToken
     ) {
     }
 
@@ -88,14 +91,18 @@ public class ApiV1MemberController {
             throw new ServiceException("401-2", "비밀번호가 일치하지 않습니다.");
         }
 
+        String accessToken = memberService.genAccessToken(member);
+
         rq.addCookie("apiKey", member.getApiKey());
+        rq.addCookie("accessToken", accessToken);
 
         return new RsData(
                 "200-1",
                 "%s님 환영합니다.".formatted(reqBody.username),
                 new LoginResBody(
                         new MemberDto(member),
-                        member.getApiKey()
+                        member.getApiKey(),
+                        accessToken
                 )
         );
     }
@@ -130,5 +137,4 @@ public class ApiV1MemberController {
                 )
         );
     }
-
 }
