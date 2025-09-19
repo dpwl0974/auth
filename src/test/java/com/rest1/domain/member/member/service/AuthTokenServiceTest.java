@@ -61,7 +61,7 @@ public class AuthTokenServiceTest {
         String jwt = Ut.jwt.toString(
                 secretPattern,
                 expireSeconds,
-                Map.of("name", "Paul", "age", 23)
+                Map.of("name", "Paul", "age", 23) // 토큰화 하고 싶은 내용
         );
 
         assertThat(jwt).isNotBlank();
