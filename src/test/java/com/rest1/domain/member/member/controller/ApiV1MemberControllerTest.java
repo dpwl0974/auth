@@ -216,8 +216,27 @@ public class ApiV1MemberControllerTest {
     }
 
     @Test
-    @DisplayName("내 정보, 올바른 apiKey, 유효하지 않은(만료된) accessToken")
+    @DisplayName("내 정보, 올바른 API KEY, 유효하지 않은 accessToken")
     void t6() throws Exception {
+        Member actor = memberRepository.findByUsername("user1").get();
+        String actorApiKey = actor.getApiKey();
+
+        ResultActions resultActions = mvc
+                .perform(
+                        get("/api/v1/members/me")
+                                .cookie(new Cookie("apiKey", actorApiKey), new Cookie("accessToken", "wrong-access-token"))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApiV1MemberController.class))
+                .andExpect(handler().methodName("me"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("내 정보, 올바른 apiKey, 유효하지 않은(만료된) accessToken")
+    void t7() throws Exception {
         Member actor = memberRepository.findByUsername("user1").get();
         String actorApiKey = actor.getApiKey();
         String wrongAccessToken = "wrong-access-token"; // 유효하지 않은
