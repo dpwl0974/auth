@@ -2,6 +2,7 @@ package com.rest1.domain.member.member.controller;
 
 import com.rest1.domain.member.member.entity.Member;
 import com.rest1.domain.member.member.repository.MemberRepository;
+import com.rest1.standard.ut.Ut;
 import jakarta.servlet.http.Cookie;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,6 +10,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -33,6 +35,9 @@ public class ApiV1MemberControllerTest {
 
     @Autowired
     private MemberRepository memberRepository;
+
+    @Value("${custom.jwt.secretPattern}")
+    private String secretPattern;
 
     @Test
     @DisplayName("회원 가입")
@@ -220,11 +225,14 @@ public class ApiV1MemberControllerTest {
     void t6() throws Exception {
         Member actor = memberRepository.findByUsername("user1").get();
         String actorApiKey = actor.getApiKey();
+        String wrongAccessToken = "wrong-access-token";
+
+        assertThat(Ut.jwt.isValid(wrongAccessToken, secretPattern)).isFalse();
 
         ResultActions resultActions = mvc
                 .perform(
                         get("/api/v1/members/me")
-                                .cookie(new Cookie("apiKey", actorApiKey), new Cookie("accessToken", "wrong-access-token"))
+                                .cookie(new Cookie("apiKey", actorApiKey), new Cookie("accessToken", wrongAccessToken))
                 )
                 .andDo(print());
 
@@ -232,36 +240,19 @@ public class ApiV1MemberControllerTest {
                 .andExpect(handler().handlerType(ApiV1MemberController.class))
                 .andExpect(handler().methodName("me"))
                 .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("내 정보, 올바른 apiKey, 유효하지 않은(만료된) accessToken")
-    void t7() throws Exception {
-        Member actor = memberRepository.findByUsername("user1").get();
-        String actorApiKey = actor.getApiKey();
-        String wrongAccessToken = "wrong-access-token"; // 유효하지 않은
-
-        ResultActions resultActions = mvc
-                .perform(
-                        get("/api/v1/members/me")
-                                .header("Authorization", "Bearer " + actorApiKey + " " +wrongAccessToken)
-                )
-                .andDo(print());
-
-        Member member = memberRepository.findByUsername("user1").get();
 
         resultActions
-                .andExpect(handler().handlerType(ApiV1MemberController.class))
-                .andExpect(handler().methodName("me"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.resultCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("OK"))
-                .andExpect(jsonPath("$.data").exists())
-                .andExpect(jsonPath("$.data.memberDto.id").value(member.getId()))
-                .andExpect(jsonPath("$.data.memberDto.createDate").value(member.getCreateDate().toString()))
-                .andExpect(jsonPath("$.data.memberDto.modifyDate").value(member.getModifyDate().toString()))
-                .andExpect(jsonPath("$.data.memberDto.name").value(member.getName()));
+                .andExpect((result) -> {
+                    Cookie apiKeyCookie = result.getResponse().getCookie("accessToken");
+                    assertThat(apiKeyCookie).isNotNull();
+
+                    assertThat(apiKeyCookie.getPath()).isEqualTo("/");
+                    assertThat(apiKeyCookie.getDomain()).isEqualTo("localhost");
+                    assertThat(apiKeyCookie.isHttpOnly()).isEqualTo(true);
+
+                    String newAccessToken = apiKeyCookie.getValue();
+
+                    assertThat(Ut.jwt.isValid(newAccessToken, secretPattern)).isTrue();
+                });
     }
-
-
 }
